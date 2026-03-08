@@ -21,8 +21,8 @@
 			"matchUpdateTypes": ["minor", "patch"],
 			"automerge": true,
 			"platformAutomerge": false,
-			"schedule": ["after 9am and before 5pm on weekdays"],
-			"automergeSchedule": ["after 9am and before 5pm on weekdays"]
+			"schedule": ["after 9am and before 5pm every weekday"],
+			"automergeSchedule": ["after 9am and before 5pm every weekday"]
 		},
 		{
 			"description": "Group Bun runtime, types, and Docker image — require review",
