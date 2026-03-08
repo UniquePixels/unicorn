@@ -12,6 +12,59 @@ import type { AnyComponentInteraction } from './component';
 import { findComponentSpark } from './component';
 import { defineGatewayEvent, type GatewayEventSpark } from './gateway-event';
 
+/** Minimal repliable interaction shape shared by commands and components. */
+interface RepliableInteraction {
+	replied: boolean;
+	deferred: boolean;
+	reply(options: { content: string; flags?: number }): Promise<unknown>;
+	editReply(options: { content: string }): Promise<unknown>;
+}
+
+/** Spark execute result — either ok or a failure with a reason. */
+type ExecuteResult = { ok: true } | { ok: false; reason: string };
+
+/**
+ * Handles the post-execute reply logic shared by commands and components.
+ *
+ * - If the guard/action failed and the interaction hasn't been replied to, sends the failure reason.
+ * - If the action succeeded but the interaction was never replied to, sends a fallback warning.
+ */
+async function replyWithResult(
+	interaction: RepliableInteraction,
+	result: ExecuteResult,
+	label: string,
+	logMeta: Record<string, unknown>,
+	logger: Client['logger'],
+): Promise<void> {
+	if (!(result.ok || interaction.replied)) {
+		if (interaction.deferred) {
+			await interaction.editReply({ content: result.reason });
+		} else {
+			await interaction.reply({
+				content: result.reason,
+				flags: MessageFlags.Ephemeral,
+			});
+		}
+	} else if (result.ok && !interaction.replied) {
+		logger.warn(
+			logMeta,
+			interaction.deferred
+				? `${label} deferred but never replied`
+				: `${label} succeeded but never responded`,
+		);
+		if (interaction.deferred) {
+			await interaction.editReply({
+				content: 'Something went wrong. Please try again.',
+			});
+		} else {
+			await interaction.reply({
+				content: 'Something went wrong. Please try again.',
+				flags: MessageFlags.Ephemeral,
+			});
+		}
+	}
+}
+
 /**
  * Routes slash command and context menu interactions to the appropriate CommandSpark.
  */
@@ -36,34 +89,13 @@ async function handleCommand(
 	}
 
 	const result = await spark.execute(interaction);
-
-	if (!(result.ok || interaction.replied)) {
-		if (interaction.deferred) {
-			await interaction.editReply({ content: result.reason });
-		} else {
-			await interaction.reply({
-				content: result.reason,
-				flags: MessageFlags.Ephemeral,
-			});
-		}
-	} else if (result.ok && !interaction.replied) {
-		client.logger.warn(
-			{ command: interaction.commandName, user: interaction.user.id },
-			interaction.deferred
-				? `${label} deferred but never replied`
-				: `${label} succeeded but never responded`,
-		);
-		if (interaction.deferred) {
-			await interaction.editReply({
-				content: 'Something went wrong. Please try again.',
-			});
-		} else {
-			await interaction.reply({
-				content: 'Something went wrong. Please try again.',
-				flags: MessageFlags.Ephemeral,
-			});
-		}
-	}
+	await replyWithResult(
+		interaction,
+		result,
+		label,
+		{ command: interaction.commandName, user: interaction.user.id },
+		client.logger,
+	);
 }
 
 /**
@@ -123,34 +155,13 @@ async function handleComponent(
 	}
 
 	const result = await spark.execute(interaction);
-
-	if (!(result.ok || interaction.replied)) {
-		if (interaction.deferred) {
-			await interaction.editReply({ content: result.reason });
-		} else {
-			await interaction.reply({
-				content: result.reason,
-				flags: MessageFlags.Ephemeral,
-			});
-		}
-	} else if (result.ok && !interaction.replied) {
-		client.logger.warn(
-			{ customId: interaction.customId, user: interaction.user.id },
-			interaction.deferred
-				? `${label} deferred but never replied`
-				: `${label} succeeded but never responded`,
-		);
-		if (interaction.deferred) {
-			await interaction.editReply({
-				content: 'Something went wrong. Please try again.',
-			});
-		} else {
-			await interaction.reply({
-				content: 'Something went wrong. Please try again.',
-				flags: MessageFlags.Ephemeral,
-			});
-		}
-	}
+	await replyWithResult(
+		interaction,
+		result,
+		label,
+		{ customId: interaction.customId, user: interaction.user.id },
+		client.logger,
+	);
 }
 
 /**

@@ -1,6 +1,7 @@
 import { describe, expect, mock, test } from 'bun:test';
 import type { ExtendedLogger } from '@/core/lib/logger';
 import { AppError } from '@/core/lib/logger';
+import { assertDefined } from '@/core/lib/test-helpers';
 import {
 	createGuard,
 	GUARD_META,
@@ -15,12 +16,6 @@ import {
 	runGuard,
 	runGuards,
 } from './index';
-
-/** Asserts that a value is not null or undefined, narrowing its type. */
-function assertDefined<T>(val: T | undefined | null): asserts val is T {
-	expect(val).not.toBeNull();
-	expect(val).toBeDefined();
-}
 
 /** Shorthand for a pass-through guard with metadata. */
 function namedGuard(name: string, meta?: Partial<GuardMeta>) {
@@ -713,9 +708,10 @@ describe('processGuards', () => {
 		);
 
 		// Verify the wrapped error
-		const calls = (logger.error as ReturnType<typeof mock>).mock.calls;
-		expect(calls).toHaveLength(1);
-		const errorCall = calls[0] as NonNullable<(typeof calls)[0]>;
+		const errorMock = logger.error as ReturnType<typeof mock>;
+		expect(errorMock.mock.calls).toHaveLength(1);
+		const [errorCall] = errorMock.mock.calls;
+		assertDefined(errorCall);
 		const logObj = errorCall[0] as { err: AppError };
 		expect(logObj.err).toBeInstanceOf(AppError);
 		expect(logObj.err.code).toBe('ERR_GUARD_EXCEPTION');

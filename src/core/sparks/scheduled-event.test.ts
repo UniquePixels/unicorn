@@ -1,18 +1,12 @@
 import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test';
 import { CronJob } from 'cron';
 import type { Client } from 'discord.js';
-import { createMockClient } from '@/core/lib/test-helpers';
+import { assertDefined, createMockClient } from '@/core/lib/test-helpers';
 import {
 	defineScheduledEvent,
 	type ScheduledContext,
 	stopAllScheduledJobs,
 } from './scheduled-event';
-
-/** Asserts that a value is not null or undefined, narrowing its type. */
-function assertDefined<T>(val: T | undefined | null): asserts val is T {
-	expect(val).not.toBeNull();
-	expect(val).toBeDefined();
-}
 
 // ─── Test Helpers ────────────────────────────────────────────────
 

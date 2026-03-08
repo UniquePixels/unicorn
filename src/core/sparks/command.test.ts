@@ -7,9 +7,11 @@ import {
 } from 'discord.js';
 import type { Guard } from '@/core/guards';
 import {
+	assertDefined,
 	createMockAutocompleteInteraction,
 	createMockChatInputInteraction,
 	createMockClient,
+	createMockCommand,
 	failGuard,
 	passThroughGuard,
 } from '@/core/lib/test-helpers';
@@ -19,17 +21,6 @@ import {
 	defineCommandWithAutocomplete,
 	hasAutocomplete,
 } from './command';
-
-// ─── Test Helpers ────────────────────────────────────────────────
-
-function assertDefined<T>(val: T | undefined | null): asserts val is T {
-	expect(val).not.toBeNull();
-	expect(val).toBeDefined();
-}
-
-function createMockCommand(name: string) {
-	return { name } as unknown as SlashCommandBuilder;
-}
 
 /** Creates a mock ContextMenuCommandBuilder (has `type` property). */
 function createMockContextMenuCommand(name: string) {

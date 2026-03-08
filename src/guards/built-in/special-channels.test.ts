@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import type { Guild } from 'discord.js';
 import type { GuardResult } from '@/core/guards';
 import { getGuardMeta } from '@/core/guards';
+import { assertDefined } from '@/core/lib/test-helpers';
 import {
 	hasPublicUpdatesChannel,
 	hasRulesChannel,
@@ -14,12 +15,6 @@ type SpecialChannelKey =
 	| 'publicUpdatesChannel'
 	| 'rulesChannel'
 	| 'safetyAlertsChannel';
-
-/** Assert a value is defined (non-null, non-undefined). */
-function assertDefined<T>(val: T | undefined | null): asserts val is T {
-	expect(val).not.toBeNull();
-	expect(val).toBeDefined();
-}
 
 /** Extract failure reason from guard result. */
 function getFailureReason(result: GuardResult<unknown>): string {
