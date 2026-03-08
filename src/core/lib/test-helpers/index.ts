@@ -24,7 +24,9 @@ export {
  * Asserts a value is defined (not null or undefined).
  * Use in tests to narrow types before making assertions on the value.
  */
-export function assertDefined<T>(val: T | undefined | null): asserts val is NonNullable<T> {
+export function assertDefined<T>(
+	val: T | undefined | null,
+): asserts val is NonNullable<T> {
 	expect(val).not.toBeNull();
 	expect(val).toBeDefined();
 }

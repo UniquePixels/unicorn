@@ -377,5 +377,5 @@ export function findComponentSpark(
 		}
 	}
 
-	return undefined;
+	return;
 }
