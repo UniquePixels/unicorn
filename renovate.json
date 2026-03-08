@@ -5,80 +5,52 @@
 		"group:allNonMajor",
 		":separateMajorReleases"
 	],
-	"baseBranchPatterns": [
-		"develop"
-	],
-	"labels": [
-		"dependencies"
-	],
+	"baseBranchPatterns": ["develop"],
+	"labels": ["dependencies"],
 	"timezone": "America/Chicago",
 	"rangeStrategy": "bump",
 	"minimumReleaseAge": "3 days",
 	"lockFileMaintenance": {
 		"enabled": true,
-		"schedule": [
-			"before 6am on monday"
-		],
+		"schedule": ["before 6am on monday"],
 		"automerge": true
 	},
 	"packageRules": [
 		{
 			"description": "Automerge non-major updates during work hours",
-			"matchUpdateTypes": [
-				"minor",
-				"patch"
-			],
+			"matchUpdateTypes": ["minor", "patch"],
 			"automerge": true,
 			"platformAutomerge": false,
-			"schedule": [
-				"after 9am and before 5pm every weekday"
-			],
-			"automergeSchedule": [
-				"after 9am and before 5pm every weekday"
-			]
+			"schedule": ["after 9am and before 5pm every weekday"],
+			"automergeSchedule": ["after 9am and before 5pm every weekday"]
 		},
 		{
 			"description": "Group Bun runtime, types, and Docker image — require review",
 			"groupName": "bun",
-			"matchDepNames": [
-				"bun",
-				"@types/bun",
-				"oven/bun"
-			],
+			"matchDepNames": ["bun", "@types/bun", "oven/bun"],
 			"automerge": false
 		},
 		{
 			"description": "Group Biome linter and tooling — require review",
 			"groupName": "biome",
-			"matchDepNames": [
-				"biome",
-				"@biomejs/biome"
-			],
+			"matchDepNames": ["biome", "@biomejs/biome"],
 			"automerge": false
 		},
 		{
 			"description": "Group Prisma packages — require review",
 			"groupName": "prisma",
-			"matchDepNames": [
-				"/^prisma$/",
-				"/^@prisma\\//"
-			],
+			"matchDepNames": ["/^prisma$/", "/^@prisma\\//"],
 			"automerge": false
 		},
 		{
 			"description": "Group Discord.js ecosystem",
 			"groupName": "discord.js",
-			"matchDepNames": [
-				"/^discord\\.js$/",
-				"/^@discordjs\\//"
-			]
+			"matchDepNames": ["/^discord\\.js$/", "/^@discordjs\\//"]
 		},
 		{
 			"description": "Group Sentry packages",
 			"groupName": "sentry",
-			"matchDepNames": [
-				"/^@sentry\\//"
-			]
+			"matchDepNames": ["/^@sentry\\//"]
 		}
 	]
 }

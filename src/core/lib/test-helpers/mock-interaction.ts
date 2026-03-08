@@ -6,6 +6,7 @@ import type {
 	Client,
 	Interaction,
 	Message,
+	SlashCommandBuilder,
 } from 'discord.js';
 import type { AnyComponentInteraction } from '@/core/sparks/component';
 import { createMockClient } from './mock-client';
@@ -224,4 +225,17 @@ export function createMockMessage(
 		},
 		guildId: inGuild ? '987654321098765432' : null,
 	} as unknown as Message;
+}
+
+/**
+ * Creates a mock SlashCommandBuilder with a given name.
+ *
+ * Useful for testing command and command group spark definitions
+ * without constructing a full Discord.js builder.
+ *
+ * @param name - The command name
+ * @returns A mock SlashCommandBuilder instance
+ */
+export function createMockCommand(name: string): SlashCommandBuilder {
+	return { name } as unknown as SlashCommandBuilder;
 }

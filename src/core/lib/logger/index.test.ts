@@ -3,6 +3,7 @@ import { EventEmitter } from 'node:events';
 import process from 'node:process';
 import { Writable } from 'node:stream';
 import pino from 'pino';
+import { assertDefined } from '@/core/lib/test-helpers';
 import {
 	AppError,
 	buildRedactPaths,
@@ -19,12 +20,6 @@ import {
 	ValidationError,
 } from './index.ts';
 import type { SerializedError } from './types.ts';
-
-/** Asserts that a value is not null or undefined, narrowing its type. */
-function assertDefined<T>(val: T | undefined | null): asserts val is T {
-	expect(val).not.toBeNull();
-	expect(val).toBeDefined();
-}
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -160,21 +155,25 @@ describe('createLogger', () => {
 		// subsequent calls are no-ops due to the module-level guard.
 		const added = after.slice(before);
 		if (added.length > 0) {
-			const handler = added[0] as NonNullable<(typeof added)[0]>;
+			const [handler] = added;
+			expect(handler).toBeDefined();
 			expect(() =>
-				handler(new Error('test exception'), 'uncaughtException'),
+				handler?.(new Error('test exception'), 'uncaughtException'),
 			).not.toThrow();
-			process.removeListener(
-				'uncaughtException',
-				handler as (...args: unknown[]) => void,
-			);
+			if (handler) {
+				process.removeListener(
+					'uncaughtException',
+					handler as (...args: unknown[]) => void,
+				);
+			}
 		} else {
 			// Handler was already registered by an earlier createLogger() call —
 			// verify it exists and exercise it via the last registered listener.
 			expect(after.length).toBeGreaterThan(0);
-			const lastHandler = after.at(-1) as NonNullable<(typeof after)[0]>;
+			const lastHandler = after.at(-1);
+			expect(lastHandler).toBeDefined();
 			expect(() =>
-				lastHandler(new Error('test exception'), 'uncaughtException'),
+				lastHandler?.(new Error('test exception'), 'uncaughtException'),
 			).not.toThrow();
 		}
 	});
@@ -186,19 +185,18 @@ describe('createLogger', () => {
 
 		const added = after.slice(before);
 		expect(added.length > 0 || after.length > 0).toBe(true);
-		const handler = (added.length > 0 ? added[0] : after.at(-1)) as NonNullable<
-			(typeof after)[0]
-		>;
+		const handler = added.length > 0 ? added[0] : after.at(-1);
+		expect(handler).toBeDefined();
 
 		const dummyPromise = Promise.resolve();
 		// Error reason
 		expect(() =>
-			handler(new Error('test rejection'), dummyPromise),
+			handler?.(new Error('test rejection'), dummyPromise),
 		).not.toThrow();
 		// Non-Error reason (covers String(reason) branch)
-		expect(() => handler('string reason', dummyPromise)).not.toThrow();
+		expect(() => handler?.('string reason', dummyPromise)).not.toThrow();
 
-		if (added.length > 0) {
+		if (added.length > 0 && handler) {
 			process.removeListener(
 				'unhandledRejection',
 				handler as (...args: unknown[]) => void,

@@ -145,23 +145,23 @@ export function err<E>(error: E): Err<E> {
 export function attempt<T>(fn: () => Awaitable<T>): Promise<Result<T, Error>> {
 	return Promise.try(fn)
 		.then((data) => ok(data))
-		.catch((thrown): Err<Error> => {
-			if (thrown instanceof Error) {
-				return err(thrown);
+		.catch((error_): Err<Error> => {
+			if (error_ instanceof Error) {
+				return err(error_);
 			}
 
 			let detail: string;
 			try {
 				detail =
-					typeof thrown === 'object' && thrown !== null
-						? JSON.stringify(thrown)
-						: String(thrown);
+					typeof error_ === 'object' && error_ !== null
+						? JSON.stringify(error_)
+						: String(error_);
 			} catch {
-				detail = String(thrown);
+				detail = String(error_);
 			}
 
 			const error = new Error(`Attempt error: ${detail}`, {
-				cause: thrown,
+				cause: error_,
 			});
 
 			return err(error);
