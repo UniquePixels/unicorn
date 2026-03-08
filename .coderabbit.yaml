@@ -1,0 +1,106 @@
+# CodeRabbit Configuration
+# https://docs.coderabbit.ai/guides/configure-coderabbit
+
+language: en-US
+early_access: true
+reviews:
+  profile: assertive
+  request_changes_workflow: true
+  auto_title_instructions: |
+    Use the format: <emoji> <type>(scope): description
+    Types and emojis: new 🦄 / improve 🌈 / fix 🦠 / chore 🧺 / release 🚀 / doc 📖 / ci 🚦
+    Scope should reflect the primary area changed (e.g. config, sparks, guards).
+    Description must be lowercase, imperative mood, max 50 chars total.
+  review_details: true
+  fail_commit_status: true
+  suggested_labels: false
+  poem: false
+  pre_merge_checks:
+    docstrings:
+      mode: error
+
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - develop
+
+  # Review hints to focus on
+  path_instructions:
+    - path: "**"
+      instructions: |
+        General project rules:
+        - Runtime is Bun, not Node.js. Do not suggest node/npm/yarn patterns.
+        - Zod v4 is used. `z.enum()` handles native TS enums directly;
+          `z.nativeEnum()` is deprecated. Do not flag `z.enum(SomeEnum)` as incorrect.
+        - `attempt()` is the project's Result-type wrapper. All fallible calls in
+          sparks must use it — never raw try/catch or uncaught promises.
+        - `import type` is required for type-only imports (`verbatimModuleSyntax`).
+        - Biome enforces kebab-case filenames and organized imports.
+
+    - path: "CHANGELOG.md"
+      instructions: |
+        Validate changelog entries against Keep a Changelog format (https://keepachangelog.com/en/1.1.0/):
+        - Entries must be under a version header: `## [x.y.z] - YYYY-MM-DD`
+        - Changes grouped under: Added, Changed, Deprecated, Removed, Fixed, Security
+        - Unreleased section (`## [Unreleased]`) should exist for in-progress work
+        - Version links must be defined at the bottom of the file
+        - Verify the entry accurately describes the changes in this PR
+        - Ensure no version is skipped or duplicated
+        - Check that the date matches the expected release date
+
+    - path: "src/core/**"
+      instructions: |
+        Core framework code. Focus on:
+        - Type safety and proper TypeScript patterns
+        - Error handling with `attempt()` — no raw try/catch in sparks
+        - API design consistency and backward compatibility
+        - Performance implications for hot paths (interaction routing, guard chains)
+
+    - path: "src/guards/**"
+      instructions: |
+        Guards are composable validation functions. Ensure:
+        - Proper TypeScript type narrowing via generics
+        - Clear, actionable error messages in GuardResult
+        - No side effects — guards must be pure predicates
+        - Consistent pattern with existing built-in guards
+
+    - path: "src/sparks/**"
+      instructions: |
+        Sparks are modular bot handlers (commands, components, events, cron). Check:
+        - Consistent structure with other sparks of the same type
+        - All fallible operations wrapped in `attempt()`
+        - Guard usage where user input needs validation
+        - Proper typing for interaction and event parameters
+
+    - path: "**/*.test.ts"
+      instructions: |
+        Test files use Bun's test runner. Verify:
+        - Meaningful, descriptive test names
+        - Edge cases and error paths covered
+        - No flaky patterns (timers, network, race conditions)
+        - DRY — shared setup extracted into file-local helpers
+        - 100% coverage is the project threshold
+
+    - path: ".github/**"
+      instructions: |
+        CI/CD configuration. Check for:
+        - Pinned action versions with hash comments
+        - Harden Runner with egress blocking on all jobs
+        - No credential or secret exposure risks
+        - Correct branch targeting (main vs develop)
+
+    - path: "**/.claude/**"
+      instructions: |
+        Configuration files for Claude Code. Ensure:
+        - No sensitive information (tokens, keys, credentials)
+        - Proper formatting and concise content
+        - Optimized for context window and token use
+
+issue_enrichment:
+  auto_enrich:
+    enabled: true
+  planning:
+    auto_planning:
+      labels:
+        - '!no-plan'

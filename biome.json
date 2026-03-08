@@ -1,0 +1,163 @@
+{
+	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"ignoreUnknown": false,
+		"includes": ["**"]
+	},
+	"assist": { "actions": { "source": { "organizeImports": "on" } } },
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"complexity": {
+				"noExcessiveCognitiveComplexity": "on",
+				"noExcessiveNestedTestSuites": "on",
+				"noForEach": "on",
+				"noImplicitCoercions": "on",
+				"noUselessStringConcat": "on",
+				"noVoid": "on",
+				"useSimplifiedLogicExpression": "on",
+				"useWhile": "on",
+				"useLiteralKeys": "off",
+				"noUselessCatchBinding": "on",
+				"noUselessUndefined": "on"
+			},
+			"correctness": {
+				"noGlobalDirnameFilename": "on",
+				"noPrivateImports": "on",
+				"noProcessGlobal": "on",
+				"noUndeclaredDependencies": "on",
+				"noUndeclaredVariables": "on",
+				"useJsonImportAttributes": "on"
+			},
+			"nursery": {
+				"noContinue": "on",
+				"noEqualsToNull": "on",
+				"noFloatingPromises": "on",
+				"noForIn": "on",
+				"noMisusedPromises": "on",
+				"noMultiStr": "on",
+				"noParametersOnlyUsedInRecursion": "on",
+				"noProto": "on",
+				"noShadow": "on",
+				"noUnnecessaryConditions": "on",
+				"useArraySortCompare": "on",
+				"useExhaustiveSwitchCases": "on",
+				"useFind": "on",
+				"useSpread": "on"
+			},
+			"performance": {
+				"noAwaitInLoops": "on",
+				"noDelete": "on",
+				"useTopLevelRegex": "on"
+			},
+			"style": {
+				"noCommonJs": "on",
+				"noDoneCallback": "on",
+				"noExportedImports": "on",
+				"noInferrableTypes": "on",
+				"noNamespace": "on",
+				"noNegationElse": "on",
+				"noNestedTernary": "on",
+				"noParameterAssign": "on",
+				"noProcessEnv": "on",
+				"noShoutyConstants": "on",
+				"noSubstr": "on",
+				"noUnusedTemplateLiteral": "on",
+				"noUselessElse": "on",
+				"noYodaExpression": "on",
+				"useAsConstAssertion": "on",
+				"useAtIndex": "on",
+				"useBlockStatements": "on",
+				"useCollapsedElseIf": "on",
+				"useCollapsedIf": "on",
+				"useConsistentArrayType": "on",
+				"useConsistentBuiltinInstantiation": "on",
+				"useConsistentMemberAccessibility": {
+					"level": "on",
+					"options": { "accessibility": "explicit" }
+				},
+				"useDefaultParameterLast": "on",
+				"useDefaultSwitchClause": "off",
+				"useEnumInitializers": "on",
+				"useExplicitLengthCheck": "on",
+				"useFilenamingConvention": {
+					"level": "on",
+					"options": { "requireAscii": true, "filenameCases": ["kebab-case"] }
+				},
+				"useForOf": "on",
+				"useGroupedAccessorPairs": "on",
+				"useNamingConvention": {
+					"level": "on",
+					"options": {
+						"strictCase": false,
+						"requireAscii": true
+					}
+				},
+				"useNodeAssertStrict": "on",
+				"useNumberNamespace": "on",
+				"useNumericSeparators": "on",
+				"useObjectSpread": "on",
+				"useShorthandAssign": "on",
+				"useSingleVarDeclarator": "on",
+				"useSymbolDescription": "on",
+				"useThrowNewError": "on",
+				"useThrowOnlyError": "on",
+				"useTrimStartEnd": "on",
+				"useConsistentArrowReturn": "on"
+			},
+			"suspicious": {
+				"noBitwiseOperators": "on",
+				"noConsole": "on",
+				"noConstantBinaryExpressions": "on",
+				"noDuplicateTestHooks": "on",
+				"noEmptyBlockStatements": "on",
+				"noEvolvingTypes": "on",
+				"noExportsInTest": "on",
+				"noFocusedTests": "on",
+				"noMisplacedAssertion": "on",
+				"noSkippedTests": "on",
+				"noUnassignedVariables": "on",
+				"noVar": "on",
+				"useAwait": "on",
+				"useErrorMessage": "on",
+				"useGuardForIn": "on",
+				"useNumberToFixedDigitsArgument": "error",
+				"noDeprecatedImports": "on",
+				"noImportCycles": "on",
+				"noUnusedExpressions": "on"
+			}
+		}
+	},
+	"overrides": [
+		{
+			"includes": ["**/*.test.ts"],
+			"linter": {
+				"rules": {
+					"performance": {
+						"useTopLevelRegex": "off"
+					},
+					"style": {
+						"useNamingConvention": "off"
+					},
+					"suspicious": {
+						"noEmptyBlockStatements": "off",
+						"noMisplacedAssertion": "off"
+					}
+				}
+			}
+		}
+	],
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "single"
+		},
+		"globals": ["Bun", "bun"]
+	}
+}

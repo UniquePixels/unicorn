@@ -1,0 +1,253 @@
+name: CI - Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 1.2.0). Leave blank to auto-detect from commits.'
+        required: false
+        type: string
+  push:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  create-release-pr:
+    name: Create Release PR
+    if: github.repository == 'UniquePixels/unicorn' && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            objects.githubusercontent.com:443
+            release-assets.githubusercontent.com:443
+
+      - name: Generate release bot token
+        id: app-token
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
+        with:
+          app-id: ${{ vars.RELEASE_BOT_APP_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: develop
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@f23382d582832e41d5eb4fff2bddb06bc5adf8d3 # v2
+        with:
+          tool: git-cliff
+
+      - name: Determine version
+        id: version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "${INPUT_VERSION}" ]; then
+            VERSION="${INPUT_VERSION}"
+          else
+            VERSION=$(git-cliff --bumped-version)
+          fi
+
+          # Strip leading 'v' if present and validate semver
+          VERSION="${VERSION#v}"
+          if ! echo "${VERSION}" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?(\+[a-zA-Z0-9.]+)?$'; then
+            echo "::error::Invalid version '${VERSION}'. Must be valid semver (e.g. 1.2.3)."
+            exit 1
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: ${VERSION}"
+
+      - name: Generate changelog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: git-cliff --tag "v${RELEASE_VERSION}" -o CHANGELOG.md
+
+      - name: Bump package.json version
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          jq --tab --arg v "${RELEASE_VERSION}" '.version = $v' package.json > tmp.json
+          mv tmp.json package.json
+
+      - name: Create release branch and PR
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          BRANCH="release/v${RELEASE_VERSION}"
+          CREATED_BRANCH=false
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Check if an open PR already exists for this release
+          EXISTING_PR=$(gh pr list --head "${BRANCH}" --base main --state open --json number --jq '.[0].number')
+          if [ -n "${EXISTING_PR}" ]; then
+            echo "Release PR #${EXISTING_PR} already exists for ${BRANCH}, skipping"
+            exit 0
+          fi
+
+          # Create or reuse the release branch
+          if git ls-remote --exit-code --heads origin "${BRANCH}" >/dev/null 2>&1; then
+            echo "Branch ${BRANCH} already exists on remote, reusing"
+            git checkout "${BRANCH}"
+          else
+            git checkout -b "${BRANCH}"
+            CREATED_BRANCH=true
+          fi
+
+          git add CHANGELOG.md package.json
+          git commit -s -m "🚀 release: v${RELEASE_VERSION}"
+          git push -u origin "${BRANCH}"
+
+          BODY=$(git-cliff --latest --strip header)
+
+          # Requires "Allow GitHub Actions to create and approve pull requests"
+          # in Settings → Actions → General. If this fails, enable that setting.
+          gh pr create \
+            --base main \
+            --head "${BRANCH}" \
+            --title "🚀 release: v${RELEASE_VERSION}" \
+            --body "## Release v${RELEASE_VERSION}
+
+          ${BODY}
+
+          ---
+
+          **After merging**, the tag-release job will automatically:
+          - Tag this commit as \`${RELEASE_TAG}\`
+          - Create a GitHub Release with the changelog" || {
+            echo "::error::Failed to create PR. Ensure 'Allow GitHub Actions to create and approve pull requests' is enabled in Settings → Actions → General."
+            if [ "${CREATED_BRANCH}" = "true" ]; then
+              echo "Cleaning up orphaned release branch..."
+              git push origin --delete "${BRANCH}" || true
+            fi
+            exit 1
+          }
+
+  tag-release:
+    name: Tag and Release
+    if: github.repository == 'UniquePixels/unicorn' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            objects.githubusercontent.com:443
+            uploads.github.com:443
+            release-assets.githubusercontent.com:443
+
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@f23382d582832e41d5eb4fff2bddb06bc5adf8d3 # v2
+        with:
+          tool: git-cliff
+
+      - name: Extract version and create release
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          VERSION=$(jq -r '.version' package.json)
+          TAG="v${VERSION}"
+
+          CREATED_TAG=false
+
+          if git rev-parse "${TAG}" >/dev/null 2>&1; then
+            if gh release view "${TAG}" >/dev/null 2>&1; then
+              echo "Tag ${TAG} and release both exist, skipping"
+              echo "created=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "Tag ${TAG} exists but release is missing, creating release..."
+          else
+            git tag -a "${TAG}" -m "Release ${TAG}"
+            git push origin "${TAG}"
+            CREATED_TAG=true
+          fi
+
+          NOTES=$(git-cliff --latest --strip header 2>/dev/null || git-cliff --unreleased --strip header)
+
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "Release ${TAG} already exists, skipping creation"
+            echo "created=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          gh release create "${TAG}" \
+            --title "Release ${TAG}" \
+            --notes "${NOTES}" || {
+            echo "::error::Failed to create GitHub Release for ${TAG}."
+            if [ "${CREATED_TAG}" = "true" ]; then
+              echo "Removing dangling tag created by this run..."
+              git push --delete origin "${TAG}" || true
+            fi
+            exit 1
+          }
+
+          echo "created=true" >> "$GITHUB_OUTPUT"
+
+      - name: Generate release bot token
+        if: steps.release.outputs.created == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2.2.1
+        with:
+          app-id: ${{ vars.RELEASE_BOT_APP_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+
+      - name: Sync develop with main
+        if: steps.release.outputs.created == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          gh api "repos/${REPO}/merges" \
+            -f base=develop \
+            -f head=main \
+            -f commit_message="🧺 chore: sync develop with main" \
+            --silent || {
+            echo "::warning::Auto-sync failed. Develop may need manual merge from main."
+          }

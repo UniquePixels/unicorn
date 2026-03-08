@@ -1,0 +1,22 @@
+# Project names
+unicorndc
+
+# Contributor names
+uniquepixels
+
+# Tooling (package names, Github actions, etc.)
+bunfig
+commitlintrc
+pinojs
+SonarQube
+sonarlint
+coderabbit
+
+# Technical terms
+reentrancy
+unreplied
+
+# Misc prop names from external sources
+Filenaming # biome
+shouty # biome
+qualitygate # SonarQube

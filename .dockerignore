@@ -1,0 +1,41 @@
+# Version control & IDE
+.git
+.github
+.vscode
+.DS_Store
+
+# Claude Code
+.claude
+
+# Documentation & legal
+docs
+README.md
+SECURITY.md
+DCO
+LICENSE
+
+# CI/CD & code quality configs
+biome.json
+codecov.yml
+sonar-project.properties
+renovate.json
+renovate-bot.json
+.coderabbit.yaml
+.commitlintrc.ts
+.cspell.json
+.cspell.dict.txt
+.editorconfig
+
+# Docker & environment
+Dockerfile
+.dockerignore
+.env
+
+# Runtime tooling
+.mise.toml
+bunfig.toml
+
+# Test & build artifacts
+coverage
+node_modules
+scripts

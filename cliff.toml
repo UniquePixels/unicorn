@@ -1,0 +1,115 @@
+# git-cliff configuration
+# https://git-cliff.org/docs/configuration
+
+[changelog]
+header = """
+# Changelog\n
+All notable changes to this project will be documented in this file.\n
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).\n
+"""
+
+body = """
+{%- macro remote_url() -%}
+  https://github.com/{{ remote.github.owner }}/{{ remote.github.repo }}
+{%- endmacro -%}
+
+{% if version -%}
+  ## [{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else -%}
+  ## [Unreleased]
+{% endif -%}
+
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | striptags | trim }}
+{% for commit in commits %}
+{%- if commit.scope %}
+- **{{ commit.scope }}:** {{ commit.message }}\
+  {%- if commit.remote.pr_number %} \
+  ([#{{ commit.remote.pr_number }}]({{ self::remote_url() }}/pull/{{ commit.remote.pr_number }}))\
+  {%- endif %}\
+  {%- if commit.remote.username %} \
+  (@{{ commit.remote.username }})\
+  {%- endif %}
+{%- else %}
+- {{ commit.message }}\
+  {%- if commit.remote.pr_number %} \
+  ([#{{ commit.remote.pr_number }}]({{ self::remote_url() }}/pull/{{ commit.remote.pr_number }}))\
+  {%- endif %}\
+  {%- if commit.remote.username %} \
+  (@{{ commit.remote.username }})\
+  {%- endif %}
+{%- endif %}
+{%- endfor %}
+{% endfor %}
+"""
+
+footer = """
+{%- macro remote_url() -%}
+  https://github.com/{{ remote.github.owner }}/{{ remote.github.repo }}
+{%- endmacro -%}
+
+{% for release in releases -%}
+  {% if release.version -%}
+    {% if release.previous.version -%}
+      [{{ release.version | trim_start_matches(pat="v") }}]: \
+        {{ self::remote_url() }}/compare/{{ release.previous.version }}...{{ release.version }}
+    {% else -%}
+      [{{ release.version | trim_start_matches(pat="v") }}]: \
+        {{ self::remote_url() }}/releases/tag/{{ release.version }}
+    {% endif -%}
+  {% else -%}
+    {% if release.previous.version -%}
+      [Unreleased]: {{ self::remote_url() }}/compare/{{ release.previous.version }}...HEAD
+    {% endif -%}
+  {% endif -%}
+{% endfor %}
+"""
+
+trim = true
+
+[git]
+conventional_commits = true
+filter_unconventional = true
+protect_breaking_commits = true
+sort_commits = "oldest"
+tag_pattern = "v[0-9].*"
+
+commit_preprocessors = [
+  # Transform emoji commit format to conventional commits
+  # 🦄 new([scope]): desc → feat([scope]): desc
+  { pattern = '🦄 new(\([^)]*\))?:\s*', replace = 'feat${1}: ' },
+  # 🌈 improve([scope]): desc → refactor([scope]): desc
+  { pattern = '🌈 improve(\([^)]*\))?:\s*', replace = 'refactor${1}: ' },
+  # 🦠 fix([scope]): desc → fix([scope]): desc
+  { pattern = '🦠 fix(\([^)]*\))?:\s*', replace = 'fix${1}: ' },
+  # 🧺 chore([scope]): desc → chore([scope]): desc
+  { pattern = '🧺 chore(\([^)]*\))?:\s*', replace = 'chore${1}: ' },
+  # 📖 doc([scope]): desc → docs([scope]): desc
+  { pattern = '📖 doc(\([^)]*\))?:\s*', replace = 'docs${1}: ' },
+  # 🚦 ci([scope]): desc → ci([scope]): desc
+  { pattern = '🚦 ci(\([^)]*\))?:\s*', replace = 'ci${1}: ' },
+  # 🚀 release([scope]): desc → chore([scope]): desc
+  { pattern = '🚀 release(\([^)]*\))?:\s*', replace = 'chore${1}: ' },
+]
+
+# Only feat/fix/refactor produce changelog entries. All other types
+# (chore, docs, ci) and any unconventional commits are intentionally
+# excluded — the preprocessors above are the only entry points.
+commit_parsers = [
+  { message = "^feat", group = "<!-- 0 -->🦄 New" },
+  { message = "^fix", group = "<!-- 2 -->🦠 Fixed" },
+  { message = "^refactor", group = "<!-- 1 -->🌈 Improved" },
+  { message = "^chore", skip = true },
+  { message = "^docs", skip = true },
+  { message = "^ci", skip = true },
+]
+
+[bump]
+features_always_bump_minor = true
+breaking_always_bump_major = true
+initial_tag = "0.1.0"
+
+[remote.github]
+owner = "UniquePixels"
+repo = "unicorn"

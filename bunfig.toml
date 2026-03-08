@@ -1,0 +1,7 @@
+[test]
+coverage = true
+coverageReporter = ["text", "lcov"]
+coverageThreshold = 1
+coverageSkipTestFiles = true
+coveragePathIgnorePatterns = ["**/__test_sparks__/**", "**/test-helpers/**"]
+onlyFailures = true
