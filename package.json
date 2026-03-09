@@ -1,6 +1,6 @@
 {
 	"name": "unicorn",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "A type-safe Discord bot framework with modular Sparks, composable Guards, and Zod-validated configuration — built on Discord.js and Bun.",
 	"author": "Brian L. <brian@uniquepixels.xyz> (http://uniquepixels.xyz)",
 	"contributors": [],
@@ -14,7 +14,7 @@
 		"start": "bun ./src/index.ts",
 		"qa": "bun scripts/qa.ts",
 		"qa:format": "biome format --write",
-		"qa:lint": "biome check",
+		"qa:lint": "bun scripts/biome-lint.ts check",
 		"qa:tsc": "tsc --noEmit --skipLibCheck",
 		"qa:test": "bun test && bun scripts/check-coverage.ts"
 	},
@@ -32,7 +32,7 @@
 		"bun": ">=1.3.0"
 	},
 	"overrides": {
-		"undici": ">=6.23.0"
+		"undici": "^7.22.0"
 	},
 	"dependencies": {
 		"@sentry/bun": "^10.42.0",

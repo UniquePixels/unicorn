@@ -264,7 +264,7 @@ function minimalConfig(commandsOverride?: unknown) {
 			enabledPartials: [],
 			enforceNonce: true,
 			defaultPresence: { status: 'online', activities: [] },
-			...(commandsOverride !== undefined ? { commands: commandsOverride } : {}),
+			...(commandsOverride === undefined ? {} : { commands: commandsOverride }),
 		},
 		healthCheckPort: 3000,
 		misc: {},

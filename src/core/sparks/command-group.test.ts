@@ -4,23 +4,15 @@ import type {
 	ChatInputCommandInteraction,
 	Client,
 	CommandInteraction,
-	SlashCommandBuilder,
 } from 'discord.js';
 import { AppError } from '@/core/lib/logger';
-import { createMockClient } from '@/core/lib/test-helpers';
+import {
+	assertDefined,
+	createMockClient,
+	createMockCommand,
+} from '@/core/lib/test-helpers';
 import { hasAutocomplete } from './command';
 import { defineCommandGroup } from './command-group';
-
-// ─── Test Helpers ────────────────────────────────────────────────
-
-function assertDefined<T>(val: T | undefined | null): asserts val is T {
-	expect(val).not.toBeNull();
-	expect(val).toBeDefined();
-}
-
-function createMockCommand(name: string) {
-	return { name } as unknown as SlashCommandBuilder;
-}
 
 /** Build mock getSubcommand/getSubcommandGroup options. */
 function createMockSubcommandOptions(

@@ -7,6 +7,35 @@ const SECURITY_HEADERS: Record<string, string> = {
 	'Cache-Control': 'no-store',
 };
 
+/** Creates a response with security headers. */
+function respond(
+	body: string,
+	status: number,
+	extra?: Record<string, string>,
+): Response {
+	return new Response(body, {
+		status,
+		headers: extra ? { ...SECURITY_HEADERS, ...extra } : SECURITY_HEADERS,
+	});
+}
+
+/** Handles liveness probe (`/health`, `/healthz`). */
+function handleLiveness(): Response {
+	return respond('OK', 200);
+}
+
+/** Handles readiness probe (`/ready`, `/readyz`). */
+function handleReadiness(
+	client: Client,
+	shutdownSignal?: ShutdownSignal,
+): Response {
+	if (shutdownSignal?.shuttingDown) {
+		return respond('Shutting Down', 503);
+	}
+	const isReady = client.isReady();
+	return respond(isReady ? 'Ready' : 'Not Ready', isReady ? 200 : 503);
+}
+
 /**
  * Creates the fetch handler for the health check server.
  * Extracted for testability without starting an actual server.
@@ -20,41 +49,22 @@ export function createHealthCheckHandler(
 ): (req: Request) => Response {
 	return (req: Request): Response => {
 		if (req.method !== 'GET' && req.method !== 'HEAD') {
-			return new Response('Method Not Allowed', {
-				status: 405,
-				headers: {
-					...SECURITY_HEADERS,
-					// biome-ignore lint/style/useNamingConvention: Allow is a standard HTTP header name (RFC 9110)
-					Allow: 'GET, HEAD',
-				},
+			return respond('Method Not Allowed', 405, {
+				// biome-ignore lint/style/useNamingConvention: Allow is a standard HTTP header name (RFC 9110)
+				Allow: 'GET, HEAD',
 			});
 		}
 
-		const url = new URL(req.url);
+		const { pathname } = new URL(req.url);
 
-		// Liveness probe - is the process running?
-		if (url.pathname === '/health' || url.pathname === '/healthz') {
-			return new Response('OK', { status: 200, headers: SECURITY_HEADERS });
+		if (pathname === '/health' || pathname === '/healthz') {
+			return handleLiveness();
 		}
 
-		// Readiness probe - is the bot connected to Discord?
-		if (url.pathname === '/ready' || url.pathname === '/readyz') {
-			if (shutdownSignal?.shuttingDown) {
-				return new Response('Shutting Down', {
-					status: 503,
-					headers: SECURITY_HEADERS,
-				});
-			}
-			const isReady = client.isReady();
-			return new Response(isReady ? 'Ready' : 'Not Ready', {
-				status: isReady ? 200 : 503,
-				headers: SECURITY_HEADERS,
-			});
+		if (pathname === '/ready' || pathname === '/readyz') {
+			return handleReadiness(client, shutdownSignal);
 		}
 
-		return new Response('Not Found', {
-			status: 404,
-			headers: SECURITY_HEADERS,
-		});
+		return respond('Not Found', 404);
 	};
 }

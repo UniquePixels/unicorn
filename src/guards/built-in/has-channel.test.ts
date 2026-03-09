@@ -1,16 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import type { Guild, GuildBasedChannel } from 'discord.js';
 import { getGuardMeta } from '@/core/guards';
+import { assertDefined } from '@/core/lib/test-helpers';
 import { hasChannel, resolveChannelFromGuard } from './has-channel';
 import { inCachedGuild } from './in-cached-guild';
 
 // ─── Test Helpers ────────────────────────────────────────────────
-
-/** Assert a value is defined (non-null, non-undefined). */
-function assertDefined<T>(val: T | undefined | null): asserts val is T {
-	expect(val).not.toBeNull();
-	expect(val).toBeDefined();
-}
 
 /** Create mock guild with a channel cache. */
 function createMockGuildInput(channels: Record<string, unknown>) {
