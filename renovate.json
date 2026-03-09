@@ -5,6 +5,9 @@
 		"group:allNonMajor",
 		":separateMajorReleases"
 	],
+	"commitMessagePrefix": "🧺 chore(deps):",
+	"commitMessageAction": "update",
+	"automergeStrategy": "squash",
 	"baseBranchPatterns": ["develop"],
 	"labels": ["dependencies"],
 	"timezone": "America/Chicago",
