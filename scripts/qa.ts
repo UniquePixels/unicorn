@@ -47,6 +47,8 @@ const RE_FORMATTED_FILES = /Formatted (\d+) file/;
 const RE_CHECKED_FILES = /Checked (\d+) file/;
 /** Matches Biome's "Found N error(s)" output. */
 const RE_FOUND_ERRORS = /Found (\d+) error/;
+/** Matches all Biome "Found N info" or "Found N warn" occurrences in output. */
+const RE_FOUND_INFO_WARN_G = /Found (\d+) (info|warn)/g;
 /** Matches Bun test runner's "N pass" output. */
 const RE_TEST_PASS = /(\d+) pass/;
 /** Matches Bun test runner's "N fail" output. */
@@ -97,8 +99,15 @@ const steps: StepDef[] = [
 				const checked = RE_CHECKED_FILES.exec(out);
 				return checked ? `${checked[1]} files` : '';
 			}
+			const parts: string[] = [];
 			const errors = RE_FOUND_ERRORS.exec(out);
-			return errors ? `${errors[1]} error(s)` : 'failed';
+			if (errors) {
+				parts.push(`${errors[1]} error(s)`);
+			}
+			for (const match of out.matchAll(RE_FOUND_INFO_WARN_G)) {
+				parts.push(`${match[1]} ${match[2]} finding(s)`);
+			}
+			return parts.length > 0 ? parts.join(', ') : 'failed';
 		},
 	},
 	{
@@ -163,7 +172,6 @@ async function runStep(def: StepDef): Promise<StepResult> {
 	]);
 	const code = await proc.exited;
 	const output = `${stdout}${stderr}`.trim();
-
 	return {
 		name: def.name,
 		passed: code === 0,
@@ -293,13 +301,45 @@ function printAndExit(results: StepResult[], passed: boolean): never {
 	process.exit(passed ? 0 : 1);
 }
 
+/** CSI u prefix used by the Kitty keyboard protocol (`ESC [`). */
+const CSI_PREFIX = '\x1b[';
+
+/**
+ * Normalizes Kitty keyboard protocol sequences to standard key values.
+ *
+ * Kitty protocol encodes keys as `ESC [ <code> ; <modifiers> u`. This converts
+ * them to their standard equivalents so key handlers work across terminals.
+ */
+function normalizeKey(raw: string): string {
+	if (!(raw.startsWith(CSI_PREFIX) && raw.endsWith('u'))) {
+		return raw;
+	}
+
+	const inner = raw.slice(CSI_PREFIX.length, -1);
+	const [codeStr, modStr] = inner.split(';');
+	const code = Number(codeStr);
+	const mods = modStr ? Number(modStr) - 1 : 0;
+
+	// biome-ignore lint/suspicious/noBitwiseOperators: bitwise mask extracts Ctrl modifier flag per Kitty protocol spec
+	const isCtrl = (mods & 4) !== 0;
+
+	// Ctrl+letter → control character (e.g. Ctrl+C → 0x03)
+	if (isCtrl && code >= 97 && code <= 122) {
+		return String.fromCodePoint(code - 96);
+	}
+
+	return String.fromCodePoint(code);
+}
+
 /** Handles a single keypress in interactive mode. */
 function handleKey(
-	key: string,
+	raw: string,
 	state: { cursor: number },
 	results: StepResult[],
 	passed: boolean,
 ): void {
+	const key = normalizeKey(raw);
+
 	if (key === 'q' || key === '\x03') {
 		process.stdout.write(SHOW_CURSOR);
 		process.stdin.setRawMode(false);
@@ -316,7 +356,7 @@ function handleKey(
 		render(results, state.cursor, passed);
 	}
 
-	if (key === '\r' || key === ' ') {
+	if (key === '\r' || key === '\n' || key === ' ') {
 		const selected = results[state.cursor];
 		if (selected) {
 			selected.expanded = !selected.expanded;
