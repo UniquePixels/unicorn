@@ -1,6 +1,6 @@
 {
 	"name": "unicorn",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "A type-safe Discord bot framework with modular Sparks, composable Guards, and Zod-validated configuration — built on Discord.js and Bun.",
 	"author": "Brian L. <brian@uniquepixels.xyz> (http://uniquepixels.xyz)",
 	"contributors": [],
