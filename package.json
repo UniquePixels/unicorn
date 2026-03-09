@@ -14,7 +14,7 @@
 		"start": "bun ./src/index.ts",
 		"qa": "bun scripts/qa.ts",
 		"qa:format": "biome format --write",
-		"qa:lint": "biome check",
+		"qa:lint": "bun scripts/biome-lint.ts check",
 		"qa:tsc": "tsc --noEmit --skipLibCheck",
 		"qa:test": "bun test && bun scripts/check-coverage.ts"
 	},
