@@ -25,7 +25,7 @@ jobs:
       matrix:
         include:
           - name: Lint
-            command: bun biome ci --reporter=github
+            command: bun scripts/biome-lint.ts ci --reporter=github
           - name: Type Check
             command: echo "::add-matcher::.github/matchers/tsc.json" && tsc --noEmit --skipLibCheck --pretty false
           - name: Test
